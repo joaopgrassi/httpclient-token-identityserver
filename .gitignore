@@ -12,6 +12,8 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+src/IdentityServer/identityserver4_log.txt
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
