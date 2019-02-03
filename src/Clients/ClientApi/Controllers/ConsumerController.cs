@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using ClientApi.ApiClient;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,13 +12,16 @@ namespace ClientApi.Controllers
     public class ConsumerController : ControllerBase
     {
         private readonly ClientCredentialsTokenRequest _tokenRequest;
+        private readonly IProtectedApiClient _protectedApiClient;
         private readonly HttpClient _identityServerClient;
 
         public ConsumerController(
             ClientCredentialsTokenRequest tokenRequest,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            IProtectedApiClient protectedApiClient)
         {
             _tokenRequest = tokenRequest ?? throw new ArgumentNullException(nameof(tokenRequest));
+            _protectedApiClient = protectedApiClient ?? throw new ArgumentNullException(nameof(protectedApiClient));
             _identityServerClient = httpClientFactory.CreateClient("IdentityServerClient");
         }
 
@@ -120,6 +124,14 @@ namespace ClientApi.Controllers
             }
             var content = await response.Content.ReadAsStringAsync();
             return Ok(content);
+        }
+
+        // Uses the typed HttpClient that implicitly gets the access_token from IdentityServer
+        [HttpGet("version4")]
+        public async Task<IActionResult> GetVersionFour()
+        {
+            var result = await _protectedApiClient.GetProtectedResources();            
+            return Ok(result);
         }
     }
 }
