@@ -23,6 +23,7 @@ namespace ClientApi
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
+            // Adds an instance of the class that contains our credentials
             services.AddSingleton(new ClientCredentialsTokenRequest
             {
                 Address = "http://localhost:5000/connect/token",
@@ -49,7 +50,6 @@ namespace ClientApi
             });            
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             if (env.IsDevelopment())

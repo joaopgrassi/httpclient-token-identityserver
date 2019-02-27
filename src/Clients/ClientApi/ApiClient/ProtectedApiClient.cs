@@ -15,6 +15,8 @@ namespace ClientApi.ApiClient
 
         public async Task<string> GetProtectedResources()
         {
+            // No more getting access_tokens code!
+
             var response = await _httpClient.GetAsync("/api/protected");
             if (!response.IsSuccessStatusCode)
             {

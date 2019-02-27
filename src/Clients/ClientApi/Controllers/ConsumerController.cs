@@ -11,68 +11,37 @@ namespace ClientApi.Controllers
     [ApiController]
     public class ConsumerController : ControllerBase
     {
-        private readonly ClientCredentialsTokenRequest _tokenRequest;
+        private readonly IIdentityServerClient _identityServerClient;
         private readonly IProtectedApiClient _protectedApiClient;
-        private readonly HttpClient _identityServerClient;
 
         public ConsumerController(
-            ClientCredentialsTokenRequest tokenRequest,
-            IHttpClientFactory httpClientFactory,
+            IIdentityServerClient identityServerClient,
             IProtectedApiClient protectedApiClient)
         {
-            _tokenRequest = tokenRequest ?? throw new ArgumentNullException(nameof(tokenRequest));
+            _identityServerClient = identityServerClient ?? throw new ArgumentNullException(nameof(identityServerClient));
             _protectedApiClient = protectedApiClient ?? throw new ArgumentNullException(nameof(protectedApiClient));
-            _identityServerClient = httpClientFactory.CreateClient("IdentityServerClient");
         }
 
         // GET api/values
         [HttpGet("version1")]
         public async Task<IActionResult> GetVersionOne()
         {
-            // discover endpoints from metadata
-            var client = new HttpClient();
-            var disco = await client.GetDiscoveryDocumentAsync("http://localhost:5000");
-            if (disco.IsError)
-            {
-                Console.WriteLine(disco.Error);
-                return StatusCode(500);
-            }
-
-            // request token
-            var tokenResponse = await client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+            // 1. "retrieve" our api credentials. This must be registered on Identity Server!
+            var apiClientCredentials = new ClientCredentialsTokenRequest
             {
                 Address = "http://localhost:5000/connect/token",
 
                 ClientId = "client-app",
                 ClientSecret = "secret",
+
+                // This is the scope our Protected API requires. 
                 Scope = "read:entity"
-            });
+            };
 
-            if (tokenResponse.IsError)
-            {
-                Console.WriteLine(tokenResponse.Error);
-                return StatusCode(500);
-            }
-
-            var apiClient = new HttpClient();
-            client.SetBearerToken(tokenResponse.AccessToken);
-
-            var response = await client.GetAsync("http://localhost:5002/api/protected");
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine(response.StatusCode);
-                return StatusCode(500);
-            }
-            var content = await response.Content.ReadAsStringAsync();
-            return Ok(content);
-        }
-
-        // Uses the Singleton ClientCredentialsTokenRequest
-        [HttpGet("version2")]
-        public async Task<IActionResult> GetVersionTwo()
-        {
-            // discover endpoints from metadata
+            // creates a new HttpClient to talk to our IdentityServer (localhost:5000)
             var client = new HttpClient();
+
+            // just checks if we can reach the Discovery document. Not 100% needed but..
             var disco = await client.GetDiscoveryDocumentAsync("http://localhost:5000");
             if (disco.IsError)
             {
@@ -80,41 +49,44 @@ namespace ClientApi.Controllers
                 return StatusCode(500);
             }
 
-            // request token
-            var tokenResponse = await client.RequestClientCredentialsTokenAsync(_tokenRequest);
+            // 2. Authenticates and get an access token from Identity Server
+            var tokenResponse = await client.RequestClientCredentialsTokenAsync(apiClientCredentials);
             if (tokenResponse.IsError)
             {
                 Console.WriteLine(tokenResponse.Error);
                 return StatusCode(500);
             }
 
+            // Another HttpClient for talking now with our Protected API
             var apiClient = new HttpClient();
+
+            // 3. Set the access_token in the request Authorization: Bearer <token>
             client.SetBearerToken(tokenResponse.AccessToken);
 
+            // 4. Send a request to our Protected API
             var response = await client.GetAsync("http://localhost:5002/api/protected");
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.StatusCode);
                 return StatusCode(500);
             }
+
             var content = await response.Content.ReadAsStringAsync();
+
+            // All good! We have the data here
             return Ok(content);
         }
 
         // Uses the IdentityServer HttpClient + the ClientCredentialsTokenRequest
-        [HttpGet("version3")]
+        [HttpGet("version2")]
         public async Task<IActionResult> GetVersionThree()
         {
-            // request token
-            var tokenResponse = await _identityServerClient.RequestClientCredentialsTokenAsync(_tokenRequest);
-            if (tokenResponse.IsError)
-            {
-                Console.WriteLine(tokenResponse.Error);
-                return StatusCode(500);
-            }
+            // uses our typed HttpClient to get an access_token from identity server
+            var accessToken = await _identityServerClient.RequestClientCredentialsTokenAsync();
 
+            // the rest is the same as in version1
             var apiClient = new HttpClient();
-            apiClient.SetBearerToken(tokenResponse.AccessToken);
+            apiClient.SetBearerToken(accessToken);
 
             var response = await apiClient.GetAsync("http://localhost:5002/api/protected");
             if (!response.IsSuccessStatusCode)
@@ -126,11 +98,11 @@ namespace ClientApi.Controllers
             return Ok(content);
         }
 
-        // Uses the typed HttpClient that implicitly gets the access_token from IdentityServer
-        [HttpGet("version4")]
+        //Uses the typed HttpClient that implicitly gets the access_token from IdentityServer
+        [HttpGet("version3")]
         public async Task<IActionResult> GetVersionFour()
         {
-            var result = await _protectedApiClient.GetProtectedResources();            
+            var result = await _protectedApiClient.GetProtectedResources();
             return Ok(result);
         }
     }
