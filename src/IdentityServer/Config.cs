@@ -9,45 +9,34 @@ namespace IdentityServer
 {
     public static class Config
     {
-        public static IEnumerable<IdentityResource> GetIdentityResources()
-        {
-            return new IdentityResource[]
-            {
-                new IdentityResources.OpenId()
-            };
-        }
+        public static IEnumerable<IdentityResource> IdentityResources =>
+            new IdentityResource[] {new IdentityResources.OpenId()};
 
-        public static IEnumerable<ApiResource> GetApis()
+        public static IEnumerable<ApiResource> GetApiResource()
         {
-            return new ApiResource[]
+            return new List<ApiResource>
             {
-                new ApiResource
+                new("protected-api", "My API which is protected by JWT bearer tokens")
                 {
-                    Name = "protected-api",
-                    DisplayName = "My API which is protected by JWT bearer tokens",
-                    Scopes = new []
-                    {
-                        new Scope("read:entity")
-                    }
-                }
+                    Scopes = {"read:entity"}
+                },
             };
         }
 
-        public static IEnumerable<Client> GetClients()
-        {
-            return new Client[] 
+        public static IEnumerable<ApiScope> ApiScopes =>
+            new ApiScope[] { new("read:entity", "API"),};
+
+        public static IEnumerable<Client> Clients =>
+            new Client[]
             {
-                new Client
+                // SwaggerUI client
+                new()
                 {
                     ClientId = "client-app",
-                    AllowedGrantTypes = new [] { GrantType.ClientCredentials },
-                    ClientSecrets =
-                    {
-                        new Secret("secret".Sha256())
-                    },
-                    AllowedScopes = new [] { "read:entity" }
-                }
+                    ClientSecrets = {new Secret("secret".Sha256())},
+                    AllowedGrantTypes = new[] {GrantType.ClientCredentials},
+                    AllowedScopes = new[] {"read:entity"}
+                },
             };
-        }
     }
 }

@@ -6,23 +6,19 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace ClientApi
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup()
         {
-            Configuration = configuration;
         }
-
-        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
-
             // Adds an instance of the class that contains our credentials
             services.AddSingleton(new ClientCredentialsTokenRequest
             {
@@ -43,27 +39,22 @@ namespace ClientApi
             }).AddHttpMessageHandler<ProtectedApiBearerTokenHandler>();
 
             // Registers the IdentityServer client
-            services.AddHttpClient<IIdentityServerClient, IdentityServerClient>(client => 
+            services.AddHttpClient<IIdentityServerClient, IdentityServerClient>(client =>
             {
                 client.BaseAddress = new Uri("http://localhost:5000");
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
-            });            
+            });
+
+            services.AddControllers();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
-            {
                 app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
-            }
-
-            app.UseHttpsRedirection();
-            app.UseMvc();
+            
+            app.UseRouting();
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
 }
