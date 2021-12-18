@@ -29,20 +29,24 @@ namespace ClientApi.Controllers
             // 1. "retrieve" our api credentials. This must be registered on Identity Server!
             var apiClientCredentials = new ClientCredentialsTokenRequest
             {
-                Address = "http://localhost:5000/connect/token",
+                Address = "http://httpclient-idsrv/connect/token",
 
                 ClientId = "client-app",
                 ClientSecret = "secret",
 
                 // This is the scope our Protected API requires. 
-                Scope = "read:entity"
+                Scope = "read:entity",
             };
 
             // creates a new HttpClient to talk to our IdentityServer (localhost:5000)
             var client = new HttpClient();
 
             // just checks if we can reach the Discovery document. Not 100% needed but..
-            var disco = await client.GetDiscoveryDocumentAsync("http://localhost:5000");
+            var disco = await client.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest
+            {
+                Address = "http://httpclient-idsrv",
+                Policy = { RequireHttps = false }
+            });
             if (disco.IsError)
             {
                 Console.WriteLine(disco.Error);
@@ -64,7 +68,7 @@ namespace ClientApi.Controllers
             client.SetBearerToken(tokenResponse.AccessToken);
 
             // 4. Send a request to our Protected API
-            var response = await client.GetAsync("http://localhost:5002/api/protected");
+            var response = await client.GetAsync("http://protected-api/api/protected");
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.StatusCode);
@@ -88,7 +92,7 @@ namespace ClientApi.Controllers
             var apiClient = new HttpClient();
             apiClient.SetBearerToken(accessToken);
 
-            var response = await apiClient.GetAsync("http://localhost:5002/api/protected");
+            var response = await apiClient.GetAsync("http://protected-api/api/protected");
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.StatusCode);

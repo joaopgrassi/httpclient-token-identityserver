@@ -22,7 +22,7 @@ namespace ClientApi
             // Adds an instance of the class that contains our credentials
             services.AddSingleton(new ClientCredentialsTokenRequest
             {
-                Address = "http://localhost:5000/connect/token",
+                Address = "http://httpclient-idsrv/connect/token",
                 ClientId = "client-app",
                 ClientSecret = "secret",
                 Scope = "read:entity"
@@ -34,14 +34,14 @@ namespace ClientApi
             // Register our ProtectedApi client with a DelegatingHandler that knows how to obtain an access_token
             services.AddHttpClient<IProtectedApiClient, ProtectedApiClient>(client =>
             {
-                client.BaseAddress = new Uri("http://localhost:5002");
+                client.BaseAddress = new Uri("http://protected-api");
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
             }).AddHttpMessageHandler<ProtectedApiBearerTokenHandler>();
 
             // Registers the IdentityServer client
             services.AddHttpClient<IIdentityServerClient, IdentityServerClient>(client =>
             {
-                client.BaseAddress = new Uri("http://localhost:5000");
+                client.BaseAddress = new Uri("http://httpclient-idsrv");
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
             });
 

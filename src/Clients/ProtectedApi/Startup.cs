@@ -22,7 +22,7 @@ namespace ProtectedApi
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
-                    options.Authority = "http://localhost:5000";
+                    options.Authority = "http://httpclient-idsrv";
                     options.RequireHttpsMetadata = false;
                     options.Audience = "protected-api";
                 });

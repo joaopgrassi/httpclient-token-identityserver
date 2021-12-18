@@ -1,0 +1,30 @@
+version: "3.7"
+
+networks:
+  httpclient-custom-network:
+  
+services:
+  httpclient-idsrv:
+    build:
+      context: ./src/IdentityServer
+      dockerfile: Dockerfile
+    ports:
+     - "5005:80"
+    networks:
+      - httpclient-custom-network
+  client-api:
+    build:
+      context: ./src/Clients/ClientApi
+      dockerfile: Dockerfile
+    ports:
+     - "5006:80"
+    networks:
+      - httpclient-custom-network
+  protected-api:
+    build:
+      context: ./src/Clients/ProtectedApi
+      dockerfile: Dockerfile
+    ports:
+     - "5007:80"
+    networks:
+      - httpclient-custom-network
